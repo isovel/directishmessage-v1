@@ -1,0 +1,111 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  pointer-events: none;
+  background-color: #000;
+  color: #FFF;
+  overflow: hidden;
+}
+
+.message-container {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  bottom: 54px;
+  right: 10px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  user-select: none;
+  pointer-events: auto;
+  box-sizing: border-box;
+  font-family: Fira Code;
+  text-align: left;
+  justify-content: left;
+  background-color: #000; 
+}
+
+.message-container::before {
+  content: '';
+  position: sticky;
+  top: 0;
+  left: -20px;
+  bottom: -120px;
+  right: -20px;
+  box-shadow: 0 20px 24px -24px #000 inset;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  border-radius: 10px;
+  background: #222;
+}
+::-webkit-scrollbar-track:window-inactive {
+  background: transparent;
+  border: solid 1px #222;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background: #FFF;
+  border: none;
+}
+::-webkit-scrollbar-thumb:window-inactive {
+  background: transparent;
+  border: solid 1px #FFF;
+}
+
+.message {
+  user-select: none;
+  pointer-events: none;
+  width: 100vw;
+  background-color: #000;
+  color: #FFF;
+  margin-top: 10px;
+}
+
+/* .message:nth-of-type(odd) {
+  background-color: #FFF;
+  color: #000;
+} */
+
+.message-user::before {
+  content: '> ';
+}
+
+.message-user::after {
+  content: ':';
+}
+
+.textbox-container {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  right: 10px;
+  overflow: hidden;
+  user-select: auto;
+  pointer-events: auto;
+  box-sizing: border-box;
+  font-family: Fira Code;
+  text-align: left;
+  justify-content: left;
+  background-color: #000; 
+}
+
+.textbox {
+  border-radius: 5px;
+  height: 24px;
+  font-family: Fira Code;
+  font-size: 16px;
+  border: none;
+  outline: none;
+  background: #222;
+  width: calc(100% - 10px);
+  overflow: hidden;
+  color: white;
+  padding: 5px;
+}
