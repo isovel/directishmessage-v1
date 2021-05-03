@@ -26,16 +26,6 @@ body {
   background-color: #000; 
 }
 
-.message-container::before {
-  content: '';
-  position: sticky;
-  top: 0;
-  left: -20px;
-  bottom: -120px;
-  right: -20px;
-  box-shadow: 0 20px 24px -24px #000 inset;
-}
-
 ::-webkit-scrollbar {
   width: 10px;
 }
@@ -60,8 +50,8 @@ body {
 }
 
 .message {
-  user-select: none;
-  pointer-events: none;
+  user-select: text;
+  pointer-events: auto;
   width: 100vw;
   background-color: #000;
   color: #FFF;
@@ -78,7 +68,7 @@ body {
 }
 
 .message-user::after {
-  content: ':';
+  content: ': ';
 }
 
 .textbox-container {

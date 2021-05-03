@@ -3,68 +3,26 @@
 const fetch = require('node-fetch');
 const express = require('express');
 const bodyParser = require('body-parser');
-const { messageLimit, port } = require('./config.json');
-const clientID = process.env['client_id'];
-const clientSecret = process.env['client_secret'];
+const crypto = require('crypto');
+const { clientID, messageLimit, port } = require('./config.json');
+const clientSecret = process.env['clientSecret'];
 
 
 //////////// Sector 0x1 ////////////
 
 const app = express();
 app.use(bodyParser.json());
-let messages = [
-  ['SYSTEM', 'Loaded!'],
-  // ['Antelope', 'We\'re no strangers to love'],
-  // ['Bison', 'You know the rules and so do I'],
-  // ['Camel', 'A full commitment\'s what I\'m thinking of'],
-  // ['Duck', 'You wouldn\'t get this from any other guy'],
-  // ['Elephant', 'I just wanna tell you how I\'m feeling'],
-  // ['Ferret', 'Gotta make you understand'],
-  // ['Goldfish', 'Never gonna give you up'],
-  // ['Hyena', 'Never gonna let you down'],
-  // ['Iguana', 'Never gonna run around and desert you'],
-  // ['Jaguar', 'Never gonna make you cry'],
-  // ['Koala', 'Never gonna say goodbye'],
-  // ['Lion', 'Never gonna tell a lie and hurt you'],
-  // ['Antelope', 'We\'re no strangers to love'],
-  // ['Bison', 'You know the rules and so do I'],
-  // ['Camel', 'A full commitment\'s what I\'m thinking of'],
-  // ['Duck', 'You wouldn\'t get this from any other guy'],
-  // ['Elephant', 'I just wanna tell you how I\'m feeling'],
-  // ['Ferret', 'Gotta make you understand'],
-  // ['Goldfish', 'Never gonna give you up'],
-  // ['Hyena', 'Never gonna let you down'],
-  // ['Iguana', 'Never gonna run around and desert you'],
-  // ['Jaguar', 'Never gonna make you cry'],
-  // ['Koala', 'Never gonna say goodbye'],
-  // ['Lion', 'Never gonna tell a lie and hurt you'],
-  // ['Antelope', 'We\'re no strangers to love'],
-  // ['Bison', 'You know the rules and so do I'],
-  // ['Camel', 'A full commitment\'s what I\'m thinking of'],
-  // ['Duck', 'You wouldn\'t get this from any other guy'],
-  // ['Elephant', 'I just wanna tell you how I\'m feeling'],
-  // ['Ferret', 'Gotta make you understand'],
-  // ['Goldfish', 'Never gonna give you up'],
-  // ['Hyena', 'Never gonna let you down'],
-  // ['Iguana', 'Never gonna run around and desert you'],
-  // ['Jaguar', 'Never gonna make you cry'],
-  // ['Koala', 'Never gonna say goodbye'],
-  // ['Lion', 'Never gonna tell a lie and hurt you'],
-  // ['Antelope', 'We\'re no strangers to love'],
-  // ['Bison', 'You know the rules and so do I'],
-  // ['Camel', 'A full commitment\'s what I\'m thinking of'],
-  // ['Duck', 'You wouldn\'t get this from any other guy'],
-  // ['Elephant', 'I just wanna tell you how I\'m feeling'],
-  // ['Ferret', 'Gotta make you understand'],
-  // ['Goldfish', 'Never gonna give you up'],
-  // ['Hyena', 'Never gonna let you down'],
-  // ['Iguana', 'Never gonna run around and desert you'],
-  // ['Jaguar', 'Never gonna make you cry'],
-  // ['Koala', 'Never gonna say goodbye'],
-  // ['Lion', 'Never gonna tell a lie and hurt you']
+const initialMessages = [
+  ['SYSTEM', 'Loaded!', 0]
 ];
+let messages = initialMessages;
 const getMessages = () => {
-  return messages.slice(-messageLimit);
+  slimArr = messages.slice(-messageLimit);
+  stateStr = crypto.createHmac('sha256', slimArr.toString()).digest('hex');
+  return {
+    messages: slimArr,
+    state: stateStr
+  }
 };
 
 
@@ -99,7 +57,7 @@ app.get('/', async ({ query }, response) => {
           client_secret: clientSecret,
           code,
           grant_type: 'authorization_code',
-          redirect_uri: 'https://directishmessage.isotach.repl.co',
+          redirect_uri: 'https://dm.isota.ch',
           scope: 'identify',
         }),
         headers: {
@@ -167,6 +125,10 @@ app.post('/messages', async ({ headers, body }, response) => {
     if (!reqJSON['username'] || !reqJSON['message']) {
       return response.sendStatus(400);
     }
+    if (reqJSON['message'] == '.clear') {
+      messages = initialMessages;
+      return response.send(getMessages());
+    }
     newMessage = [
       reqJSON['username'],
       reqJSON['message']
@@ -175,7 +137,6 @@ app.post('/messages', async ({ headers, body }, response) => {
     return response.send(getMessages());
   } catch (e) {
     console.error(e);
-    console.log(body);
     return response.sendStatus(500);
   }
 });
