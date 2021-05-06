@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
+
 @keyframes identify {
   from {
     box-shadow: -10px -10px #BBB;
@@ -19,26 +21,28 @@ body {
   padding: 0;
   user-select: none;
   pointer-events: none;
+  box-sizing: border-box;
+  font-family: 'Fira Code', monospace;
+  text-align: center;
+  overflow: hidden;
 }
 
-body > div {
+.main-container {
   width: 100vw;
   height: 100vh;
-  box-sizing: border-box;
-  font-family: Fira Code;
   text-align: center;
   justify-content: center;
   background-color: #000;
   overflow: hidden;
 }
 
-body > div > div {
+.main-container > div {
   width: 100vw;
   height: 100vh;
   background-color: #111;
 }
 
-body > div > div > div {
+.main-container > div > div {
   position: relative;
   box-sizing: border-box;
   height: 128px;
@@ -52,7 +56,7 @@ body > div > div > div {
   animation: identify 0.5s alternate infinite;
 }
 
-body > div > div > div > a {
+.main-container > div > div > a {
   width: calc(100% - 48px);
   height: calc(100% - 48px);
   color: inherit;
@@ -61,12 +65,25 @@ body > div > div > div > a {
   padding: 24px;
 }
 
-body > div > div > div > a:hover {
+.main-container > div > div > a:hover {
   color: #000;
   background-color: #FFF;
 }
 
-body > div > div > div > a > span {
+.main-container > div > div > a > span {
   margin: auto;
   justify-self: center;
+}
+
+.footer-wrapper {
+  position: relative;
+  bottom: 30px;
+  margin: auto;
+  font-size: 12px;
+}
+
+.footer-wrapper > a {
+  text-decoration: none;
+  color: #1A1A1A;
+  pointer-events: auto;
 }

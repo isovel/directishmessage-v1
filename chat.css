@@ -1,12 +1,15 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
+
 html,
 body {
   margin: 0;
   padding: 0;
   user-select: none;
   pointer-events: none;
-  background-color: #000;
-  color: #FFF;
   overflow: hidden;
+  background-color: #000;
+  font-family: 'Fira Code', monospace;
+  color: #FFF;
 }
 
 .message-container {
@@ -20,7 +23,6 @@ body {
   user-select: none;
   pointer-events: auto;
   box-sizing: border-box;
-  font-family: Fira Code;
   text-align: left;
   justify-content: left;
   background-color: #000; 
@@ -63,11 +65,11 @@ body {
   color: #000;
 } */
 
-.message-user::before {
+.message-author::before {
   content: '> ';
 }
 
-.message-user::after {
+.message-author::after {
   content: ': ';
 }
 
@@ -80,7 +82,6 @@ body {
   user-select: auto;
   pointer-events: auto;
   box-sizing: border-box;
-  font-family: Fira Code;
   text-align: left;
   justify-content: left;
   background-color: #000; 
@@ -89,7 +90,6 @@ body {
 .textbox {
   border-radius: 5px;
   height: 24px;
-  font-family: Fira Code;
   font-size: 16px;
   border: none;
   outline: none;

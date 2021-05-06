@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const { clientID, messageLimit, port } = require('./config.json');
 const clientSecret = process.env['clientSecret'];
+const pwd = process.env['pwd'];
 
 
 //////////// Sector 0x1 ////////////
@@ -30,7 +31,7 @@ const getMessages = () => {
 
 const pages = {
   login: 'login.html',
-  chat: 'chat.html'
+  chat: 'chat.html',
 };
 
 const scripts = {
@@ -70,7 +71,8 @@ app.get('/', async ({ query }, response) => {
           authorization: `${oauthData.token_type} ${oauthData.access_token}`,
         }
       })).json();
-      return response.redirect(`/chat?name=${userResult.username}`);
+      response.setHeader('Set-Cookie', `name=${userResult.username}`);
+      return response.redirect(`/chat`);
     } catch (error) {
       // NOTE: An unauthorized token will not throw an error;
       // it will return a 401 Unauthorized response in the try block above
@@ -91,13 +93,7 @@ app.get('/styles/login', async ({}, response) => {
 
 //////////// Sector 0x4 ////////////
 
-app.get('/chat', async ({ query }, response) => {
-  const { name } = query;
-
-  if (!name || name == '') {
-    return response.sendFile(pages['login'], { root: '.' });
-  }
-
+app.get('/chat', async ({}, response) => {
   return response.sendFile(pages['chat'], { root: '.' });
 });
 
@@ -119,24 +115,44 @@ app.get('/messages', async ({}, response) => {
 app.post('/messages', async ({ headers, body }, response) => {
   try {
     if (headers["content-type"] != 'application/json') {
+      console.log('Sent response \'415\'.', headers, body);
       return response.sendStatus(415);
     }
+
     reqJSON = body;
-    if (!reqJSON['username'] || !reqJSON['message']) {
+    if (!reqJSON['username'] || !reqJSON['message'] || !reqJSON['timestamp']) {
+      console.log('Sent response \'400\'.', reqJSON);
       return response.sendStatus(400);
     }
-    if (reqJSON['message'] == '.clear') {
-      messages = initialMessages;
+
+    if ((
+        reqJSON['message'][0] == '/' && 
+        reqJSON['message'] != `/clear -${pwd}`
+      ) || (
+        reqJSON['message'].includes('<') &&
+        reqJSON['message'].includes('>')
+    )){
+      console.log('Sent response \'403\'.', reqJSON);
+      return response.sendStatus(403);
+    }
+
+    if (reqJSON['message'] == `/clear -${pwd}`) {
+      messages = [["SYSTEM", `${reqJSON['username']} cleared all messages.`, Date.now()]];
+      console.log('Sent response \'200\'.', reqJSON);
       return response.send(getMessages());
     }
+
     newMessage = [
       reqJSON['username'],
-      reqJSON['message']
+      reqJSON['message'],
+      reqJSON['timestamp']
     ];
+
     messages.push(newMessage);
+    console.log('Sent response \'200\'.', reqJSON);
     return response.send(getMessages());
   } catch (e) {
-    console.error(e);
+    console.error('Sent response \'500\'.', e);
     return response.sendStatus(500);
   }
 });
