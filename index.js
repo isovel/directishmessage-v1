@@ -5,18 +5,21 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const { clientID, messageLimit, port } = require('./config.json');
-const clientSecret = process.env['clientSecret'];
-const pwd = process.env['pwd'];
+const clientSecret = process.env['OAUTH_CLIENT_SECRET'];
+const pwd = process.env['ADMIN_AUTH_CODE'];
+const admins = process.env['ADMIN_ID_LIST'];
 
 
 //////////// Sector 0x1 ////////////
 
 const app = express();
 app.use(bodyParser.json());
+
 const initialMessages = [
-  ['SYSTEM', 'Loaded!', 0]
+  {author: 'SYSTEM', content: 'Loaded!', timestamp: Date.now()}
 ];
 let messages = initialMessages;
+
 const getMessages = () => {
   slimArr = messages.slice(-messageLimit);
   stateStr = crypto.createHmac('sha256', slimArr.toString()).digest('hex');
@@ -47,8 +50,8 @@ const styles = {
 
 //////////// Sector 0x3 ////////////
 
-app.get('/', async ({ query }, response) => {
-  const { code } = query;
+app.get('/', async (request, response) => {
+  const { code } = request.query;
   if (code) {
     try {
       const oauthResult = await fetch('https://discord.com/api/oauth2/token', {
@@ -58,7 +61,7 @@ app.get('/', async ({ query }, response) => {
           client_secret: clientSecret,
           code,
           grant_type: 'authorization_code',
-          redirect_uri: 'https://dm.isota.ch',
+          redirect_uri: `https://${request.hostname}`,
           scope: 'identify',
         }),
         headers: {
@@ -71,8 +74,11 @@ app.get('/', async ({ query }, response) => {
           authorization: `${oauthData.token_type} ${oauthData.access_token}`,
         }
       })).json();
-      response.setHeader('Set-Cookie', `name=${userResult.username}`);
-      return response.redirect(`/chat`);
+      const isAdmin = _ => {
+        return userResult.id == 255515821541949440;
+      }
+      response.setHeader('Set-Cookie', `name=${userResult.username};id=${userResult.id}${isAdmin()?'; admin=true':''}`);
+      return response.redirect('/chat');
     } catch (error) {
       // NOTE: An unauthorized token will not throw an error;
       // it will return a 401 Unauthorized response in the try block above
@@ -108,47 +114,55 @@ app.get('/styles/chat', async ({}, response) => {
 
 //////////// Sector 0x5 ////////////
 
+app.get('/admins', async ({}, response) => {
+  return response.send(admins);
+});
+
+
+//////////// Sector 0x6 ////////////
+
 app.get('/messages', async ({}, response) => {
   return response.send(getMessages());
 });
 
 app.post('/messages', async ({ headers, body }, response) => {
   try {
-    if (headers["content-type"] != 'application/json') {
+    if (headers['content-type'] != 'application/json') {
       console.log('Sent response \'415\'.', headers, body);
       return response.sendStatus(415);
     }
 
     reqJSON = body;
-    if (!reqJSON['username'] || !reqJSON['message'] || !reqJSON['timestamp']) {
+    if (!reqJSON.author || !reqJSON.content || !reqJSON.timestamp) {
       console.log('Sent response \'400\'.', reqJSON);
       return response.sendStatus(400);
     }
 
     if ((
-        reqJSON['message'][0] == '/' && 
-        reqJSON['message'] != `/clear -${pwd}`
+        reqJSON.content[0] == '/' &&
+        (
+          reqJSON.content != `/clear -${pwd}` &&
+          !reqJSON.content.startsWith('/setname')
+        )
       ) || (
-        reqJSON['message'].includes('<') &&
-        reqJSON['message'].includes('>')
+        reqJSON.content.includes('<') &&
+        reqJSON.content.includes('>')
     )){
       console.log('Sent response \'403\'.', reqJSON);
       return response.sendStatus(403);
     }
 
-    if (reqJSON['message'] == `/clear -${pwd}`) {
-      messages = [["SYSTEM", `${reqJSON['username']} cleared all messages.`, Date.now()]];
-      console.log('Sent response \'200\'.', reqJSON);
-      return response.send(getMessages());
+    if (reqJSON.content == `/clear -${pwd}`) {
+      messages = [{author: 'SYSTEM', content: `${reqJSON.author} cleared all messages.`, timestamp: Date.now()}];
+    } else {
+      newMessage = {
+        author: reqJSON.author,
+        content: reqJSON.content,
+        timestamp: reqJSON.timestamp
+      };
+      messages.push(newMessage);
     }
 
-    newMessage = [
-      reqJSON['username'],
-      reqJSON['message'],
-      reqJSON['timestamp']
-    ];
-
-    messages.push(newMessage);
     console.log('Sent response \'200\'.', reqJSON);
     return response.send(getMessages());
   } catch (e) {

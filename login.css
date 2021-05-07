@@ -1,5 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
 
+html,
+body {
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  pointer-events: none;
+  box-sizing: border-box;
+  font-family: 'Fira Code', monospace;
+  text-align: center;
+  overflow: hidden;
+}
+
+/* ┈┈┄┄┄────┬───────────────────┬────┄┄┄┈┈ */
+/*          │ Production Styles │          */
+/* ┈┈┄┄┄────┴───────────────────┴────┄┄┄┈┈ */
+
 @keyframes identify {
   from {
     box-shadow: -10px -10px #BBB;
@@ -13,18 +29,6 @@
     margin-left: 59px;
     margin-right: 79px;
   }
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-  user-select: none;
-  pointer-events: none;
-  box-sizing: border-box;
-  font-family: 'Fira Code', monospace;
-  text-align: center;
-  overflow: hidden;
 }
 
 .main-container {
@@ -57,6 +61,7 @@ body {
 }
 
 .main-container > div > div > a {
+  display: block;
   width: calc(100% - 48px);
   height: calc(100% - 48px);
   color: inherit;
@@ -86,4 +91,37 @@ body {
   text-decoration: none;
   color: #1A1A1A;
   pointer-events: auto;
+}
+
+
+/* ┈┈┄┄┄────┬────────────────────┬────┄┄┄┈┈ */
+/*          │ Development Styles │          */
+/* ┈┈┄┄┄────┴────────────────────┴────┄┄┄┈┈ */
+
+@keyframes identify-development {
+  from {
+    box-shadow: -10px -10px #FFF;
+    top: calc(50vh - 54px);
+    margin-left: 79px;
+    margin-right: 59px;
+  }
+  to {
+    box-shadow: 10px 10px #FFF;
+    top: calc(50vh - 74px);
+    margin-left: 59px;
+    margin-right: 79px;
+  }
+}
+
+.main-container.development {
+  background-color: #FFF;
+}
+
+.main-container.development > div {
+  background: rgb(238,174,202);
+  background: linear-gradient(135deg, rgba(238,174,202,1) 0%, rgba(148,187,233,1) 100%);
+}
+
+.main-container.development > div > div {
+  animation: identify-development 0.5s alternate infinite;
 }

@@ -3,6 +3,9 @@ window.onload = () => {
   if (!window.location.search && !document.cookie.split(';').some((item) => item.trim().startsWith('name='))) {
     document.cookie = 'name=Anonymous User';
   }
+  // if (document.cookie.split(';').some((item) => item.trim().startsWith('admin='))) {
+  //   const admin = document.cookie.split(';').find(row => row.startsWith('admin=')).split('=')[1]
+  // }
   const username = document.cookie.split(';').find(row => row.startsWith('name=')).split('=')[1];
   let messages = '';
   let lastState = '';
@@ -16,12 +19,12 @@ window.onload = () => {
         lastState = c['state'];
       }
       messages = c['messages'];
-      messages[messages.length-1] = [messages[messages.length-1][0], messages[messages.length-1][1], true];
+      messages[messages.length-1]['newest'] = true;
       messages.forEach(v => {
-        if (v[3]) {
-          messagesStr += `<div id="newest" class="message"><span class="message-author">${v[0]}</span><span class="message-content">${v[1]}</span></div>`;
+        if (v['newest']) {
+          messagesStr += `<div id="newest" class="message"><span class="message-author">${v['author']}</span><span class="message-content">${v['content']}</span></div>`;
         } else {
-          messagesStr += `<div class="message"><span class="message-author">${v[0]}</span><span class="message-content">${v[1]}</span></div>`;
+          messagesStr += `<div class="message"><span class="message-author">${v['author']}</span><span class="message-content">${v['content']}</span></div>`;
         }
       });
       document.querySelector('.message-container').innerHTML = messagesStr;
@@ -32,9 +35,9 @@ window.onload = () => {
     });
   };
   const sendMessage = messageObject => {
-    messageObject['timestamp'] = Date.now();
+    messageObject.timestamp = Date.now();
     try {
-        fetch('https://dm.isota.ch/messages', {
+        fetch('/messages', {
           method: "POST",
           headers: {
             'Content-Type': 'application/json'
@@ -49,14 +52,14 @@ window.onload = () => {
   let interval ='';
   try {
     interval = setInterval(() => {
-      fetch('https://dm.isota.ch/messages').then(a => { updateMessages(a, false); });
+      fetch('/messages').then(a => { updateMessages(a, false); });
     }, 1000 * 1);
   } catch (e) {
     console.error(e);
   } finally {
     let msg = {
-        username: 'SYSTEM',
-        message: `${username} joined the chatroom.`
+        author: 'SYSTEM',
+        content: `${username} joined the chatroom.`
       };
       sendMessage(msg);
   }
@@ -71,8 +74,8 @@ window.onload = () => {
     if (event.code === 'Enter') {
       console.debug('Sending!');
       let msg = {
-        username: username,
-        message: textbox.value
+        author: username,
+        content: textbox.value
       };
       sendMessage(msg);
     }

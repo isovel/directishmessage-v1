@@ -7,6 +7,11 @@ function generateRandomString() {
   return randomString;
 }
 window.onload = () => {
+  if (window.location.host != 'dm.isota.ch') {
+    let el = document.getElementById('login');
+    el.href = 'https://discord.com/api/oauth2/authorize?client_id=837869684706639902&redirect_uri=https%3A%2F%2Fdev.dm.isota.ch&response_type=code&scope=identify';
+    document.querySelector('.main-container').classList.add('development');
+  }
   const fragment = new URLSearchParams(window.location.hash.slice(1));
   const [accessToken, tokenType, state] = [fragment.get('access_token'), fragment.get('token_type'), fragment.get('state')];
 
@@ -15,7 +20,6 @@ window.onload = () => {
     localStorage.setItem('oauth-state', randomString);
 
     document.getElementById('login').href += `&state=${encodeURIComponent(btoa(randomString))}`;
-    return document.getElementById('login').style.display = 'block';
   }
 
   if (localStorage.getItem('oauth-state') !== atob(decodeURIComponent(state))) {
