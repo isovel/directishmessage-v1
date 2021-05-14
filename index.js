@@ -33,16 +33,19 @@ const getMessages = () => {
 //////////// Sector 0x2 ////////////
 
 const pages = {
+  landing: 'landing.html',
   login: 'login.html',
   chat: 'chat.html',
 };
 
 const scripts = {
+  landing: 'landing.js',
   login: 'login.js',
   chat: 'chat.js'
 };
 
 const styles = {
+  landing: 'landing.css',
   login: 'login.css',
   chat: 'chat.css'
 };
@@ -51,7 +54,10 @@ const styles = {
 //////////// Sector 0x3 ////////////
 
 app.get('/', async (request, response) => {
-  const { code } = request.query;
+  const { headers, query } = request;
+  const { cookie } = headers;
+  const { code } = query;
+
   if (code) {
     try {
       const oauthResult = await fetch('https://discord.com/api/oauth2/token', {
@@ -84,7 +90,27 @@ app.get('/', async (request, response) => {
       // it will return a 401 Unauthorized response in the try block above
       console.error(error);
     }
+  } 
+  if (cookie) {
+    if (cookie.split(';').some((item) => item.trim().startsWith('name='))){
+      return response.redirect('/chat');
+    }
   }
+  return response.sendFile(pages['landing'], { root: '.' });
+});
+
+app.get('/scripts/landing', async ({}, response) => {
+  return response.sendFile(scripts['landing'], { root: '.' });
+});
+
+app.get('/styles/landing', async ({}, response) => {
+  return response.sendFile(styles['landing'], { root: '.' });
+});
+
+
+//////////// Sector 0x4 ////////////
+
+app.get('/login', async ({}, response) => {
   return response.sendFile(pages['login'], { root: '.' });
 });
 
@@ -97,7 +123,7 @@ app.get('/styles/login', async ({}, response) => {
 });
 
 
-//////////// Sector 0x4 ////////////
+//////////// Sector 0x5 ////////////
 
 app.get('/chat', async ({}, response) => {
   return response.sendFile(pages['chat'], { root: '.' });
@@ -109,13 +135,6 @@ app.get('/scripts/chat', async ({}, response) => {
 
 app.get('/styles/chat', async ({}, response) => {
   return response.sendFile(styles['chat'], { root: '.' });
-});
-
-
-//////////// Sector 0x5 ////////////
-
-app.get('/admins', async ({}, response) => {
-  return response.send(admins);
 });
 
 
@@ -154,6 +173,13 @@ app.post('/messages', async ({ headers, body }, response) => {
 
     if (reqJSON.content == `/clear -${pwd}`) {
       messages = [{author: 'SYSTEM', content: `${reqJSON.author} cleared all messages.`, timestamp: Date.now()}];
+    } else if (reqJSON.content.startsWith('/setname ')) {
+      let newName = '';
+      reqJSON.content.split(' ').slice(1).forEach(v => {
+        newName += v;
+      });
+      response.setHeader('Set-Cookie', `name=${newName}`);
+      response.setHeader('Should-Update-Name', 'true');
     } else {
       newMessage = {
         author: reqJSON.author,

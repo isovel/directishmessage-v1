@@ -1,39 +1,63 @@
-window.onload = () => {
+window.onload = _ => {
   console.debug('Loaded!');
-  if (!window.location.search && !document.cookie.split(';').some((item) => item.trim().startsWith('name='))) {
+
+  if (window.location.host != 'dm.isota.ch') {
+    document.querySelector('html').classList.add('development');
+  }
+
+  if (!document.cookie.split(';').some((item) => item.trim().startsWith('name='))) {
     document.cookie = 'name=Anonymous User';
   }
+
   // if (document.cookie.split(';').some((item) => item.trim().startsWith('admin='))) {
   //   const admin = document.cookie.split(';').find(row => row.startsWith('admin=')).split('=')[1]
   // }
-  const username = document.cookie.split(';').find(row => row.startsWith('name=')).split('=')[1];
+
+  let username = document.cookie.split(';').find(row => row.startsWith('name=')).split('=')[1];
+  const updateUsername = _ => {
+    let currentName = username;
+    let nameCookie = document.cookie.split(';').find(row => row.startsWith('name=')).split('=')[1];
+    if (currentName != nameCookie) {
+      username = nameCookie;
+      window.location.reload();
+    }
+  };
+
   let messages = '';
   let lastState = '';
+
   const updateMessages = (a, b) => {
-    let messagesStr = '';
-    a.json().then(c => {
-      if (lastState == c['state']) {
-        console.debug('No changes; Returning!');
-        return false;
-      } else {
-        lastState = c['state'];
+    try {
+      if (a.headers.get('should-update-name')) {
+        updateUsername();
       }
-      messages = c['messages'];
-      messages[messages.length-1]['newest'] = true;
-      messages.forEach(v => {
-        if (v['newest']) {
-          messagesStr += `<div id="newest" class="message"><span class="message-author">${v['author']}</span><span class="message-content">${v['content']}</span></div>`;
+      let messagesStr = '';
+      a.json().then(c => {
+        if (lastState == c.state) {
+          console.debug('No changes; Returning!');
+          return false;
         } else {
-          messagesStr += `<div class="message"><span class="message-author">${v['author']}</span><span class="message-content">${v['content']}</span></div>`;
+          lastState = c.state;
+        }
+        messages = c.messages;
+        messages[messages.length-1].special = 'newest';
+        messages[0].special = 'oldest';
+        messages.forEach(v => {
+          messagesStr += `<div ${v.special ? 'id="' + v.special + '" ' : ''}class="message"><span class="message-author" title="${(new Date(v.timestamp)).getDate()}">${v.author}</span><span class="message-content">${v.content}</span></div>`;
+        });
+        document.querySelector('.message-container').innerHTML = messagesStr;
+        if (b) {
+          document.querySelector('.textbox').value = '';
+        }
+        if (messages.length > 1) {
+          document.querySelector('#newest').scrollIntoView();
         }
       });
-      document.querySelector('.message-container').innerHTML = messagesStr;
-      document.querySelector('#newest').scrollIntoView();
-      if (b) {
-        document.querySelector('.textbox').value = '';
-      }
-    });
+    } catch (e) {
+      console.error(e);
+    }
   };
+
   const sendMessage = messageObject => {
     messageObject.timestamp = Date.now();
     try {
