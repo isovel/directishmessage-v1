@@ -22,7 +22,6 @@ window.onload = _ => {
       window.location.reload();
     }
   };
-
   let messages = '';
   let lastState = '';
 
@@ -43,7 +42,7 @@ window.onload = _ => {
         messages[messages.length-1].special = 'newest';
         messages[0].special = 'oldest';
         messages.forEach(v => {
-          messagesStr += `<div ${v.special ? 'id="' + v.special + '" ' : ''}class="message"><span class="message-author" title="${(new Date(v.timestamp)).getDate()}">${v.author}</span><span class="message-content">${v.content}</span></div>`;
+          messagesStr += `<div ${v.special ? 'id="' + v.special + '" ' : ''}class="message ${v.system ? 'system-message' : ''}"><span class="message-author" title="${v.timestamp}">${v.author}</span><span class="message-content">${v.content}</span></div>`;
         });
         document.querySelector('.message-container').innerHTML = messagesStr;
         if (b) {
@@ -95,7 +94,7 @@ window.onload = _ => {
       console.debug('The event was already handled!');
       return;
     }
-    if (event.code === 'Enter') {
+    if (event.code === 'Enter' && textbox.value != '') {
       console.debug('Sending!');
       let msg = {
         author: username,
