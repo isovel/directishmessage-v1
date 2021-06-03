@@ -1,0 +1,170 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  pointer-events: none;
+  overflow: hidden;
+  font-family: 'Fira Code', monospace;
+}
+
+
+/* ┈┈┄┄┄────┬───────────────────┬────┄┄┄┈┈ */
+/*          │ Production Styles │          */
+/* ┈┈┄┄┄────┴───────────────────┴────┄┄┄┈┈ */
+
+.content-container {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #000;
+}
+
+.message-container {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  bottom: 54px;
+  right: 10px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  user-select: none;
+  pointer-events: auto;
+  box-sizing: border-box;
+  text-align: left;
+  justify-content: left;
+  padding-top: -10px;
+  background-color: #000; 
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  border-radius: 10px;
+  background: #222;
+}
+::-webkit-scrollbar-track:window-inactive {
+  background: transparent;
+  border: solid 1px #222;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background: #FFF;
+  border: none;
+}
+::-webkit-scrollbar-thumb:window-inactive {
+  background: transparent;
+  border: solid 1px #FFF;
+}
+
+.message {
+  user-select: text;
+  pointer-events: auto;
+  width: calc(100% - 10px);
+  background-color: #000;
+  color: #FFF;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+#oldest {
+  margin-top: 0;
+}
+
+#newest {
+  margin-bottom: 0;
+}
+
+/* .message:nth-of-type(odd) {
+  background-color: #FFF;
+  color: #000;
+} */
+
+.message-author::before {
+  content: '> ';
+  margin-left: 5px;
+}
+
+.message-author::after {
+  content: ': ';
+}
+
+.textbox-container {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  right: 10px;
+  overflow: hidden;
+  user-select: auto;
+  pointer-events: auto;
+  box-sizing: border-box;
+  text-align: left;
+  justify-content: left;
+  background-color: #000; 
+}
+
+.textbox {
+  border-radius: 5px;
+  height: 24px;
+  font-family: 'Fira Code', monospace;
+  font-size: 16px;
+  border: none;
+  outline: none;
+  background: #222;
+  width: calc(100% - 10px);
+  overflow: hidden;
+  color: #FFF;
+  padding: 5px;
+}
+
+.textbox::placeholder {
+  font-family: 'Fira Code', monospace;
+}
+
+
+/* ┈┈┄┄┄────┬────────────────────┬────┄┄┄┈┈ */
+/*          │ Development Styles │          */
+/* ┈┈┄┄┄────┴────────────────────┴────┄┄┄┈┈ */
+
+.development .content-container {
+  background: rgb(238,174,202);
+  background: linear-gradient(135deg, rgba(238,174,202,1) 0%, rgba(148,187,233,1) 100%);
+}
+
+.development .message-container {
+  background: transparent;
+}
+
+.development ::-webkit-scrollbar-track,
+.development ::-webkit-scrollbar-track:window-inactive {
+  background: #DDDDDDAA;
+  border: none;
+}
+
+.development ::-webkit-scrollbar-thumb,
+.development ::-webkit-scrollbar-thumb:window-inactive {
+  background: #FFFFFFAA;
+  border: none;
+}
+
+.development .message {
+  background: #FFFFFFAA;
+  background: linear-gradient(90deg, #FFFFFFAA 0%, transparent 100%);
+  color: #000;
+}
+
+.development .textbox-container {
+  background: transparent;
+}
+
+.development .textbox {
+  background: #DDDDDDAA;
+  color: #000;
+}
