@@ -15,6 +15,28 @@ body {
 /*          │ Production Styles │          */
 /* ┈┈┄┄┄────┴───────────────────┴────┄┄┄┈┈ */
 
+@keyframes system-message-prod {
+  from {
+    border: solid 1px rgba(255, 50, 150, 0.25);
+    background-color: rgba(255, 50, 150, 0.10);
+  }
+  to {
+    border: solid 1px rgba(255, 50, 150, 0.30);
+    background-color: rgba(255, 50, 150, 0.15);
+  }
+}
+
+@keyframes admin-message-prod {
+  from {
+    border: solid 1px rgba(50, 150, 255, 0.25);
+    background-color: rgba(50, 150, 255, 0.10);
+  }
+  to {
+    border: solid 1px rgba(50, 150, 255, 0.30);
+    background-color: rgba(50, 150, 255, 0.15);
+  }
+}
+
 .content-container {
   width: 100vw;
   height: 100vh;
@@ -72,6 +94,18 @@ body {
   margin-bottom: 5px;
   overflow: hidden;
   border-radius: 10px;
+}
+
+.message.system-message {
+  border: solid 1px rgba(255, 50, 150, 0.25);
+  background-color: rgba(255, 50, 150, 0.10);
+  animation: system-message-prod 1s infinite alternate;
+}
+
+.message.admin-message {
+  border: solid 1px rgba(50, 150, 255, 0.25);
+  background-color: rgba(50, 150, 255, 0.10);
+  animation: admin-message-prod 1s infinite alternate;
 }
 
 #oldest {
@@ -133,6 +167,28 @@ body {
 /*          │ Development Styles │          */
 /* ┈┈┄┄┄────┴────────────────────┴────┄┄┄┈┈ */
 
+@keyframes system-message-dev {
+  from {
+    border: solid 1px rgba(238, 174, 202, 0.45);
+    background-color: rgba(238, 174, 202, 0.30);
+  }
+  to {
+    border: solid 1px rgba(238, 174, 202, 0.50);
+    background-color: rgba(238, 174, 202, 0.35);
+  }
+}
+
+@keyframes admin-message-dev {
+  from {
+    border: solid 1px rgba(148, 187, 233, 0.45);
+    background-color: rgba(148, 187, 233, 0.30);
+  }
+  to {
+    border: solid 1px rgba(148, 187, 233, 0.50);
+    background-color: rgba(148, 187, 233, 0.35);
+  }
+}
+
 .development .content-container {
   background: rgb(238,174,202);
   background: linear-gradient(135deg, rgba(238,174,202,1) 0%, rgba(148,187,233,1) 100%);
@@ -158,6 +214,18 @@ body {
   background: #FFFFFFAA;
   background: linear-gradient(90deg, #FFFFFFAA 0%, transparent 100%);
   color: #000;
+}
+
+.development .message.system-message {
+  border: solid 1px rgba(238, 174, 202, 0.45);
+  background-color: rgba(238, 174, 202, 0.30);
+  animation: system-message-dev 1s infinite alternate;
+}
+
+.development .message.admin-message {
+  border: solid 1px rgba(148, 187, 233, 0.45);
+  background-color: rgba(148, 187, 233, 0.30);
+  animation: admin-message-dev 1s infinite alternate;
 }
 
 .development .textbox-container {

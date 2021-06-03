@@ -1,6 +1,6 @@
 {
     "clientID": "837869684706639902",
-    "messageLimit": 100,
+    "messageLimit": 50,
     "hostname": "http://localhost",
     "port": 443
 }

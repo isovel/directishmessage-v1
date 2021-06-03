@@ -16,7 +16,7 @@ const app = express();
 app.use(bodyParser.json());
 
 const initialMessages = [
-  {author: 'SYSTEM', content: 'Loaded!', timestamp: Date.now()}
+  {author: 'SYSTEM', content: 'Loaded!', timestamp: Date.now(), system: true}
 ];
 let messages = initialMessages;
 
@@ -81,9 +81,11 @@ app.get('/', async (request, response) => {
         }
       })).json();
       const isAdmin = _ => {
-        return userResult.id == 255515821541949440;
+        return (userResult.id==255515821541949440 || cookie.split(';').some((item) => item.trim().startsWith('flags=1')));
       }
-      response.setHeader('Set-Cookie', `name=${userResult.username};id=${userResult.id}${isAdmin()?'; admin=true':''}`);
+      response.cookie('name', userResult.username);
+      response.cookie('id', userResult.id);
+      response.cookie('flags', (isAdmin()?'1':'0'));
       return response.redirect('/chat');
     } catch (error) {
       // NOTE: An unauthorized token will not throw an error;
@@ -161,6 +163,8 @@ app.post('/messages', async ({ headers, body }, response) => {
         reqJSON.content[0] == '/' &&
         (
           reqJSON.content != `/clear -${pwd}` &&
+          reqJSON.content != `/enableadmin -${pwd}` &&
+          reqJSON.content != `/disableadmin -${pwd}` &&
           !reqJSON.content.startsWith('/setname')
         )
       ) || (
@@ -172,7 +176,13 @@ app.post('/messages', async ({ headers, body }, response) => {
     }
 
     if (reqJSON.content == `/clear -${pwd}`) {
-      messages = [{author: 'SYSTEM', content: `${reqJSON.author} cleared all messages.`, timestamp: Date.now()}];
+      messages = [{author: 'SYSTEM', content: `${reqJSON.author} cleared all messages.`, timestamp: Date.now(), system: true}];
+    } else if (reqJSON.content == `/enableadmin -${pwd}`) {
+      response.setHeader('Set-Cookie', `flags=1`);
+      response.setHeader('Should-Update', 'true');
+    } else if (reqJSON.content == `/disableadmin -${pwd}`) {
+      response.setHeader('Set-Cookie', `flags=0`);
+      response.setHeader('Should-Update', 'true');
     } else if (reqJSON.content.startsWith('/setname ')) {
       let newName = '';
       reqJSON.content.split(' ').slice(1).forEach(v => {
@@ -186,6 +196,8 @@ app.post('/messages', async ({ headers, body }, response) => {
         content: reqJSON.content,
         timestamp: reqJSON.timestamp
       };
+      newMessage.system = reqJSON.system || false;
+      newMessage.admin = reqJSON.admin || false;
       messages.push(newMessage);
     }
 
