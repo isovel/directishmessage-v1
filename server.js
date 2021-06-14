@@ -3,7 +3,6 @@
 const fetch = require('node-fetch');
 const express = require('express');
 const bodyParser = require('body-parser');
-const crypto = require('crypto');
 const { clientID, messageLimit, port } = require('./config.json');
 const clientSecret = process.env['OAUTH_CLIENT_SECRET'];
 const pwd = process.env['ADMIN_AUTH_CODE'];
@@ -19,10 +18,11 @@ const initialMessages = [
   {author: 'SYSTEM', content: 'Loaded!', timestamp: Date.now(), system: true}
 ];
 let messages = initialMessages;
+let state = 0;
 
 const getMessages = () => {
   slimArr = messages.slice(-messageLimit);
-  stateStr = crypto.createHmac('sha256', slimArr.toString()).digest('hex');
+  stateStr = state;
   return {
     messages: slimArr,
     state: stateStr
@@ -177,19 +177,19 @@ app.post('/messages', async ({ headers, body }, response) => {
 
     if (reqJSON.content == `/clear -${pwd}`) {
       messages = [{author: 'SYSTEM', content: `${reqJSON.author} cleared all messages.`, timestamp: Date.now(), system: true}];
-    } else if (reqJSON.content == `/enableadmin -${pwd}`) {
-      response.setHeader('Set-Cookie', `flags=1`);
-      response.setHeader('Should-Update', 'true');
+    } else if (reqJSON.content == `/enableadmin -${pwd}` || (reqJSON.content == `/enableadmin -${pwd}` && true)) {
+      response.setHeader('Set-Cookie', `flags=${headers['Cookie']}`);
+      response.setHeader('x-should-update', 'true');
     } else if (reqJSON.content == `/disableadmin -${pwd}`) {
       response.setHeader('Set-Cookie', `flags=0`);
-      response.setHeader('Should-Update', 'true');
+      response.setHeader('x-should-update', 'true');
     } else if (reqJSON.content.startsWith('/setname ')) {
       let newName = '';
       reqJSON.content.split(' ').slice(1).forEach(v => {
         newName += v;
       });
       response.setHeader('Set-Cookie', `name=${newName}`);
-      response.setHeader('Should-Update-Name', 'true');
+      response.setHeader('x-should-update-name', 'true');
     } else {
       newMessage = {
         author: reqJSON.author,
@@ -199,6 +199,7 @@ app.post('/messages', async ({ headers, body }, response) => {
       newMessage.system = reqJSON.system || false;
       newMessage.admin = reqJSON.admin || false;
       messages.push(newMessage);
+      state++;
     }
 
     console.log('Sent response \'200\'.', reqJSON);

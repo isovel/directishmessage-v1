@@ -4,6 +4,7 @@ window.onload = _ => {
   const hasCookie = (name) => {
     return document.cookie.split(';').some((item) => item.trim().startsWith(`${name}=`));
   }
+
   const getCookie = (name) => {
     return document.cookie.split(';').find(row => row.trim().startsWith(`${name}=`)).split('=')[1];
   }
@@ -13,11 +14,11 @@ window.onload = _ => {
   }
 
   if (!hasCookie('name')) {
-    document.cookie += 'name=Anonymous User';
+    document.cookie = 'name=Anonymous User';
   }
 
   if (!hasCookie('flags')) {
-    document.cookie += 'flags=0';
+    document.cookie = 'flags=0';
   }
 
   let username = getCookie('name');
@@ -63,10 +64,10 @@ window.onload = _ => {
 
   const updateMessages = (a, b) => {
     try {
-      if (a.headers.get('should-update-name')) {
+      if (a.headers.get('x-should-update-name')) {
         updateUsername();
       } 
-      if (a.headers.get('should-update')) {
+      if (a.headers.get('x-should-update')) {
         updateAll();
       }
       let messagesStr = '';
