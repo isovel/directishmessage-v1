@@ -177,6 +177,7 @@ app.post('/messages', async ({ headers, body }, response) => {
 
     if (reqJSON.content == `/clear -${pwd}`) {
       messages = [{author: 'SYSTEM', content: `${reqJSON.author} cleared all messages.`, timestamp: Date.now(), system: true}];
+      state = 0;
     } else if (reqJSON.content == `/enableadmin -${pwd}` || (reqJSON.content == `/enableadmin -${pwd}` && true)) {
       response.setHeader('Set-Cookie', `flags=${headers['Cookie']}`);
       response.setHeader('x-should-update', 'true');
