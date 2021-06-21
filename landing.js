@@ -5,7 +5,7 @@ window.onload = () => {
 
   if (window.location.host != 'dm.isota.ch') {
     let el = document.getElementById('login');
-    el.href = 'https://discord.com/api/oauth2/authorize?client_id=837869684706639902&redirect_uri=https%3A%2F%2Fdev.dm.isota.ch&response_type=code&scope=identify';
+    el.href = 'https://discord.com/api/oauth2/authorize?client_id=837869684706639902&redirect_uri=https%3A%2F%2Fdev.dm.isota.ch&response_type=code&scope=identify&prompt=none';
     document.querySelector('.main-container').classList.add('development');
   }
 
