@@ -112,11 +112,11 @@ body {
   animation: admin-message-prod 1s infinite alternate;
 }
 
-#oldest {
+#oldest, #loading {
   margin-top: 0;
 }
 
-#newest {
+#newest, #loading {
   margin-bottom: 0;
 }
 

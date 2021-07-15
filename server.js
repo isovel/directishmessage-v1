@@ -14,6 +14,29 @@ const admins = process.env['ADMIN_ID_LIST'];
 const app = express();
 app.use(bodyParser.json());
 
+const validateCookies = (request, response, next) => {
+  const { headers, query } = request;
+  const { cookie } = headers;
+  const hasCookie = (name) => {
+    let exists = cookie.split(';').some((item) => item.trim().startsWith(`${name}=`));
+    let isSet = false;
+    if (exists) isSet = cookie.split(';').find(row => row.trim().startsWith(`${name}=`)).split('=')[1] !== '';
+    return (exists && isSet);
+  }
+  const getCookie = (name) => {
+    if (!hasCookie(name)) return false;
+    return cookie.split(';').find(row => row.trim().startsWith(`${name}=`)).split('=')[1];
+  }
+  if (!hasCookie('name') || !hasCookie('flags')) {
+    response.redirect('/');
+  } else {
+    response.cookie('name', getCookie('name'));
+    response.cookie('id', getCookie('id') || '');
+    response.cookie('flags', (getCookie('id') == 255515821541949440 ? '1' : '0'));
+    next();
+  }
+}
+
 const initialMessages = [
   {author: 'SYSTEM', content: 'Loaded!', timestamp: Date.now(), system: true}
 ];
@@ -80,8 +103,8 @@ app.get('/', async (request, response) => {
           authorization: `${oauthData.token_type} ${oauthData.access_token}`,
         }
       })).json();
-      const isAdmin = _ => {
-        return (userResult.id==255515821541949440 || cookie.split(';').some((item) => item.trim().startsWith('flags=1')));
+      const isAdmin = () => {
+        return (userResult.id==255515821541949440);
       }
       response.cookie('name', userResult.username);
       response.cookie('id', userResult.id);
@@ -92,11 +115,9 @@ app.get('/', async (request, response) => {
       // it will return a 401 Unauthorized response in the try block above
       console.error(error);
     }
-  } 
-  if (cookie) {
-    if (cookie.split(';').some((item) => item.trim().startsWith('name='))){
-      return response.redirect('/chat');
-    }
+  }
+  if (cookie && cookie.split(';').some((item) => item.trim().startsWith('name='))){
+    return response.redirect('/chat');
   }
   return response.sendFile(pages['landing'], { root: '.' });
 });
@@ -126,6 +147,8 @@ app.get('/styles/login', async ({}, response) => {
 
 
 //////////// Sector 0x5 ////////////
+
+app.use('/chat', validateCookies);
 
 app.get('/chat', async ({}, response) => {
   return response.sendFile(pages['chat'], { root: '.' });
@@ -163,8 +186,6 @@ app.post('/messages', async ({ headers, body }, response) => {
         reqJSON.content[0] == '/' &&
         (
           reqJSON.content != `/clear -${pwd}` &&
-          reqJSON.content != `/enableadmin -${pwd}` &&
-          reqJSON.content != `/disableadmin -${pwd}` &&
           !reqJSON.content.startsWith('/setname')
         )
       ) || (
@@ -178,19 +199,13 @@ app.post('/messages', async ({ headers, body }, response) => {
     if (reqJSON.content == `/clear -${pwd}`) {
       messages = [{author: 'SYSTEM', content: `${reqJSON.author} cleared all messages.`, timestamp: Date.now(), system: true}];
       state = 0;
-    } else if (reqJSON.content == `/enableadmin -${pwd}` || (reqJSON.content == `/enableadmin -${pwd}` && true)) {
-      response.setHeader('Set-Cookie', `flags=${headers['Cookie']}`);
-      response.setHeader('x-should-update', 'true');
-    } else if (reqJSON.content == `/disableadmin -${pwd}`) {
-      response.setHeader('Set-Cookie', `flags=0`);
-      response.setHeader('x-should-update', 'true');
     } else if (reqJSON.content.startsWith('/setname ')) {
       let newName = '';
       reqJSON.content.split(' ').slice(1).forEach(v => {
         newName += v;
       });
       response.setHeader('Set-Cookie', `name=${newName}`);
-      response.setHeader('x-should-update-name', 'true');
+      response.setHeader('X-Should-Update', 'true');
     } else {
       newMessage = {
         author: reqJSON.author,

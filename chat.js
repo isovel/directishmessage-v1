@@ -1,11 +1,15 @@
-window.onload = _ => {
+window.onload = () => {
   console.debug('Loaded!');
 
   const hasCookie = (name) => {
-    return document.cookie.split(';').some((item) => item.trim().startsWith(`${name}=`));
+    let exists = document.cookie.split(';').some((item) => item.trim().startsWith(`${name}=`));
+    let isSet = false;
+    if (exists) isSet = document.cookie.split(';').find(row => row.trim().startsWith(`${name}=`)).split('=')[1] !== '';
+    return (exists && isSet);
   }
 
   const getCookie = (name) => {
+    if (!hasCookie(name)) return false;
     return document.cookie.split(';').find(row => row.trim().startsWith(`${name}=`)).split('=')[1];
   }
 
@@ -13,13 +17,11 @@ window.onload = _ => {
     document.querySelector('html').classList.add('development');
   }
 
-  if (!hasCookie('name')) {
-    document.cookie = 'name=Anonymous User';
-  }
-
-  if (!hasCookie('flags')) {
-    document.cookie = 'flags=0';
-  }
+  // Handled server-side
+  //
+  // if (!hasCookie('name') || !hasCookie('flags')) {
+  //   window.location.replace('/');
+  // }
 
   let username = getCookie('name');
   let flags = getCookie('flags');
@@ -34,40 +36,42 @@ window.onload = _ => {
         break;
     }
   };
-  const updateUserFlags = (noReload = false) => {
+  const updateUserFlags = (shouldReload = false) => {
     let currentFlags = flags;
     let flagCookie = getCookie('flags');
     if (currentFlags != flagCookie) {
       flags = flagCookie;
-      if (noReload) window.location.reload();
+      if (shouldReload) window.location.reload();
       return true;
     } else {
       return false;
     }
   };
-  const updateUsername = (noReload = false) => {
+  const updateUsername = (shouldReload = false) => {
     let currentName = username;
     let nameCookie = getCookie('name');
     if (currentName != nameCookie) {
       username = nameCookie;
-      if (noReload) window.location.reload();
+      if (shouldReload) window.location.reload();
       return true;
     } else {
       return false;
     }
   };
-  const updateAll = _ => {
-    if (updateUserFlags(true) || updateUsername(true)) window.location.reload();
+  const updateAll = () => {
+    if (updateUserFlags() || updateUsername()) window.location.reload();
   };
   let messages = '';
   let lastState = '';
 
   const updateMessages = (a, b) => {
     try {
-      if (a.headers.get('x-should-update-name')) {
-        updateUsername();
-      } 
-      if (a.headers.get('x-should-update')) {
+      // Server shouldn't ever send this header
+      //
+      // if (a.headers.get('X-Should-Update-Name')) {
+      //   updateUsername();
+      // } 
+      if (a.headers.get('X-Should-Update')) {
         updateAll();
       }
       let messagesStr = '';
@@ -139,6 +143,20 @@ window.onload = _ => {
     }
     if (event.code === 'Enter' && textbox.value != '') {
       console.debug('Sending!');
+      if (textbox.value.startsWith('/')) {
+        switch(textbox.value.split(' ')[0]) {
+          case '/nick':
+          case '/nickname':
+          case '/setname':
+            let val = textbox.value.split(' ').slice(1).join(' ');
+            document.cookie = `name=${val}`;
+            updateUsername(true);
+            return;
+            break;
+          default:
+            break;
+        }
+      }
       let msg = {
         author: username,
         content: textbox.value

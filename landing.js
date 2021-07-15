@@ -1,5 +1,13 @@
 window.onload = () => {
-  if (document.cookie.split(';').some((item) => item.trim().startsWith('name='))) {
+  const hasCookie = (name) => {
+    let exists = document.cookie.split(';').some((item) => item.trim().startsWith(`${name}=`));
+    let isSet = false;
+    if (exists) isSet = (document.cookie.split(';').find(row => row.trim().startsWith(`${name}=`)).split('=')[1].trim() !== '');
+    console.warn(isSet);
+    return (exists && isSet);
+  }
+
+  if (hasCookie('name') && hasCookie('flags')) {
     window.location.replace('/chat');
   }
 
