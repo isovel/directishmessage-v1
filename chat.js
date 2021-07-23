@@ -1,6 +1,40 @@
 window.onload = () => {
   console.debug('Loaded!');
 
+  webSocket = new WebSocket(`wss://${document.location.host}`);
+
+  webSocket.onopen = (event) => {
+    webSocket.send(JSON.stringify({type: 1, data: {message: 'ping'}}));
+  };
+
+  webSocket.onmessage = (event) => {
+    const dataObj = JSON.parse(event.data);
+    console.log('[WSS] Recieved message: ', dataObj);
+    if (dataObj && dataObj.type) {
+      if (dataObj.type % 2 === 1) {
+        webSocket.send(JSON.stringify({type: 3, data: {message: 'This message type is reserved for client use only.'}}));
+      } else {
+        switch (dataObj.type) {
+          case 2:
+            console.log('[WSS] Error: ' + dataObj.data.message);
+            break;
+          case 4:
+            fetch(`https://${document.location.host}/messages`).then(a => { updateMessages(a, false); });
+            break;
+          default:
+            webSocket.send(JSON.stringify({type: 3, data: {message: `Unknown message type '${dataObj.type}'`}}));
+            break;
+        }
+      }
+    } else {
+      webSocket.send(JSON.stringify({type: 3, data: {message: 'Unsupported data structure used. Structure {type: number, data: object} expected.'}}));
+    }
+  };
+
+  webSocket.onclose = (event) => {
+    window.location.reload();
+  };
+
   const hasCookie = (name) => {
     let exists = document.cookie.split(';').some((item) => item.trim().startsWith(`${name}=`));
     let isSet = false;
@@ -26,7 +60,7 @@ window.onload = () => {
   let username = getCookie('name');
   let flags = getCookie('flags');
   const hasFlag = (flag) => {
-    switch((flags >> flag) % 2) {
+    switch ((flags >> flag) % 2) {
       case 1:
         return true;
         break;
@@ -62,7 +96,6 @@ window.onload = () => {
     if (updateUserFlags() || updateUsername()) window.location.reload();
   };
   let messages = '';
-  let lastState = '';
 
   const updateMessages = (a, b) => {
     try {
@@ -76,19 +109,12 @@ window.onload = () => {
       }
       let messagesStr = '';
       a.json().then(c => {
-        if (lastState == c.state) {
-          console.debug('No changes; Returning!');
-          return false;
-        } else {
-          lastState = c.state;
-        }
         messages = c.messages;
-        messages[messages.length-1].special = 'newest';
+        messages[messages.length - 1].special = 'newest';
         messages[0].special = 'oldest';
         messages.forEach(v => {
           const date = new Date(v.timestamp);
-          const formattedTime = `${date.getHours()}:${('0'.concat(date.getMinutes())).substr(-2)}:${('0'.concat(date.getSeconds())).substr(-2)}`;
-          messagesStr += `<div ${v.special ? 'id="' + v.special + '" ' : ''}class="message${v.system?' system-message':''}${v.admin?' admin-message':''}"><span class="message-author" title="${formattedTime}">${v.author}</span><span class="message-content">${v.content}</span></div>`;
+          messagesStr += `<div ${v.special ? 'id="' + v.special + '" ' : ''}class="message${v.system ? ' system-message' : ''}${v.admin ? ' admin-message' : ''}"><span class="message-author" title="${date.getHours()}:${('0'.concat(date.getMinutes())).substr(-2)}:${('0'.concat(date.getSeconds())).substr(-2)}">${v.author}</span><span class="message-content">${v.content}</span></div>`;
         });
         document.querySelector('.message-container').innerHTML = messagesStr;
         if (b) {
@@ -107,34 +133,25 @@ window.onload = () => {
     messageObject.timestamp = Date.now();
     if (hasFlag(0) && !messageObject.system) messageObject.admin = true;
     try {
-        fetch('/messages', {
-          method: "POST",
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(messageObject)
-        }).then(a => { updateMessages(a, true); });
-      } catch (e) {
-        console.error(e);
-      }
+      fetch('/messages', {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(messageObject)
+      }).then(a => { updateMessages(a, true); });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  let interval ='';
-  try {
-    interval = setInterval(() => {
-      fetch('/messages').then(a => { updateMessages(a, false); });
-    }, 1000 * 1);
-  } catch (e) {
-    console.error(e);
-  } finally {
-    let msg = {
-        author: 'SYSTEM',
-        content: `${username} joined the chatroom.`,
-        timestamp: Date.now(),
-        system: true
-      };
-      sendMessage(msg);
-  }
+  let msg = {
+    author: 'SYSTEM',
+    content: `${username} joined the chatroom.`,
+    timestamp: Date.now(),
+    system: true
+  };
+  sendMessage(msg);
 
   let textbox = document.querySelector('.textbox');
   textbox.addEventListener('keydown', (event) => {
@@ -146,7 +163,7 @@ window.onload = () => {
     if (event.code === 'Enter' && textbox.value != '') {
       console.debug('Sending!');
       if (textbox.value.startsWith('/')) {
-        switch(textbox.value.split(' ')[0]) {
+        switch (textbox.value.split(' ')[0]) {
           case '/nick':
           case '/nickname':
           case '/setname':

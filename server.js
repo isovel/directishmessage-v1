@@ -14,10 +14,49 @@ const admins = JSON.parse(process.env['ADMIN_ID_LIST']);
 
 const app = express();
 const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
+wss.on('connection', (ws) => {
+  ws.on('message', (message) => {
+    const dataObj = JSON.parse(message);
+    console.log('[WSS] Recieved message: ', dataObj);
+    if (dataObj && dataObj.type) {
+      if (dataObj.type % 2 === 0) {
+        ws.send(JSON.stringify({type: 2, data: {message: 'This message type is reserved for server use only.'}}));
+      } else {
+        switch (dataObj.type) {
+          case 1:
+            ws.send(JSON.stringify({type: 0, data: {message: 'pong'}}));
+            break;
+          case 3:
+            console.log('[WSS] Error: ' + dataObj.data.message);
+            break;
+          default:
+            ws.send(JSON.stringify({type: 2, data: {message: `Unknown message type '${dataObj.type}'`}}));
+            break;
+        }
+      }
+    } else {
+      ws.send(JSON.stringify({type: 2, data: {message: 'Unsupported data structure used. Structure {type: number, data: object} expected.'}}));
+    }
+  });
+  ws.send(JSON.stringify({type: 0, data: {message: 'Connection to WebSocket acknowledged.'}}));
+});
+
+const ws = {
+  send: (message) => {
+    wss.clients.forEach(client => {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+  }
+};
+
 app.use(bodyParser.json());
 
 const hasFlag = (flags, flag) => {
-  switch((flags >> flag) % 2) {
+  switch ((flags >> flag) % 2) {
     case 1:
       return true;
       break;
@@ -59,7 +98,7 @@ const validateCookies = (request, response, next) => {
 };
 
 const initialMessages = [
-  {author: 'SYSTEM', content: 'Loaded!', timestamp: Date.now(), system: true}
+  { author: 'SYSTEM', content: 'Loaded!', timestamp: Date.now(), system: true }
 ];
 let messages = initialMessages;
 let state = 0;
@@ -71,6 +110,18 @@ const getMessages = () => {
     messages: slimArr,
     state: stateStr
   }
+};
+
+const clearMessages = (user) => {
+  messages = [{ author: 'SYSTEM', content: `${user} cleared all messages.`, timestamp: Date.now(), system: true }];
+  state = 0;
+  ws.send(JSON.stringify({type: 4, data: {message: 'Messages cleared.'}}));
+};
+
+const postMessage = (message) => {
+  messages.push(message);
+  state++;
+  ws.send(JSON.stringify({type: 4, data: {message: 'New message.'}}));
 };
 
 
@@ -126,7 +177,7 @@ app.get('/', async (request, response) => {
       })).json();
       response.cookie('name', userResult.username);
       response.cookie('id', userResult.id);
-      response.cookie('flags', (admins.includes(parseInt(userResult.id))?'1':'0'));
+      response.cookie('flags', (admins.includes(parseInt(userResult.id)) ? '1' : '0'));
       return response.redirect('/chat');
     } catch (error) {
       // NOTE: An unauthorized token will not throw an error;
@@ -140,26 +191,26 @@ app.get('/', async (request, response) => {
   return response.sendFile(pages['landing'], { root: '.' });
 });
 
-app.get('/scripts/landing', async ({}, response) => {
+app.get('/scripts/landing', async ({ }, response) => {
   return response.sendFile(scripts['landing'], { root: '.' });
 });
 
-app.get('/styles/landing', async ({}, response) => {
+app.get('/styles/landing', async ({ }, response) => {
   return response.sendFile(styles['landing'], { root: '.' });
 });
 
 
 //////////// Sector 0x4 ////////////
 
-app.get('/login', async ({}, response) => {
+app.get('/login', async ({ }, response) => {
   return response.sendFile(pages['login'], { root: '.' });
 });
 
-app.get('/scripts/login', async ({}, response) => {
+app.get('/scripts/login', async ({ }, response) => {
   return response.sendFile(scripts['login'], { root: '.' });
 });
 
-app.get('/styles/login', async ({}, response) => {
+app.get('/styles/login', async ({ }, response) => {
   return response.sendFile(styles['login'], { root: '.' });
 });
 
@@ -168,22 +219,22 @@ app.get('/styles/login', async ({}, response) => {
 
 app.use('/chat', validateCookies);
 
-app.get('/chat', async ({}, response) => {
+app.get('/chat', async ({ }, response) => {
   return response.sendFile(pages['chat'], { root: '.' });
 });
 
-app.get('/scripts/chat', async ({}, response) => {
+app.get('/scripts/chat', async ({ }, response) => {
   return response.sendFile(scripts['chat'], { root: '.' });
 });
 
-app.get('/styles/chat', async ({}, response) => {
+app.get('/styles/chat', async ({ }, response) => {
   return response.sendFile(styles['chat'], { root: '.' });
 });
 
 
 //////////// Sector 0x6 ////////////
 
-app.get('/messages', async ({}, response) => {
+app.get('/messages', async ({ }, response) => {
   return response.send(getMessages());
 });
 
@@ -203,22 +254,21 @@ app.post('/messages', async (request, response) => {
     }
 
     if ((
-        reqJSON.content[0] == '/' &&
-        (
-          !(reqJSON.content == `/clear` && isAdmin()) &&
-          !reqJSON.content.startsWith('/setname')
-        )
-      ) || (
+      reqJSON.content[0] == '/' &&
+      (
+        !(reqJSON.content == `/clear` && isAdmin()) &&
+        !reqJSON.content.startsWith('/setname')
+      )
+    ) || (
         reqJSON.content.includes('<') &&
         reqJSON.content.includes('>')
-    )){
+      )) {
       console.log('Sent response \'403\'.', reqJSON);
       return response.sendStatus(403);
     }
 
     if (reqJSON.content == `/clear` && isAdmin()) {
-      messages = [{author: 'SYSTEM', content: `${reqJSON.author} cleared all messages.`, timestamp: Date.now(), system: true}];
-      state = 0;
+      clearMessages(reqJSON.author);
     } else if (reqJSON.content.startsWith('/setname ')) {
       // tbf this is handled client side, but having a handler here isn't a terrible idea
       // just in case i want to do this server-side at some point
@@ -236,10 +286,8 @@ app.post('/messages', async (request, response) => {
       };
       newMessage.system = reqJSON.system || false;
       newMessage.admin = reqJSON.admin || false;
-      messages.push(newMessage);
-      state++;
+      postMessage(newMessage);
     }
-
     console.log('Sent response \'200\'.', reqJSON);
     return response.send(getMessages());
   } catch (e) {
