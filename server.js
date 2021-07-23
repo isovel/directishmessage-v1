@@ -13,6 +13,7 @@ const admins = JSON.parse(process.env['ADMIN_ID_LIST']);
 //////////// Sector 0x1 ////////////
 
 const app = express();
+const server = http.createServer(app);
 app.use(bodyParser.json());
 
 const hasFlag = (flags, flag) => {
@@ -219,6 +220,8 @@ app.post('/messages', async (request, response) => {
       messages = [{author: 'SYSTEM', content: `${reqJSON.author} cleared all messages.`, timestamp: Date.now(), system: true}];
       state = 0;
     } else if (reqJSON.content.startsWith('/setname ')) {
+      // tbf this is handled client side, but having a handler here isn't a terrible idea
+      // just in case i want to do this server-side at some point
       let newName = '';
       reqJSON.content.split(' ').slice(1).forEach(v => {
         newName += v;
@@ -248,4 +251,4 @@ app.post('/messages', async (request, response) => {
 
 //////////// Sector 0xF ////////////
 
-app.listen(port, () => console.log(`App listening at http://localhost:${port}`));
+server.listen(port, () => console.log(`App listening at port ${port}`));

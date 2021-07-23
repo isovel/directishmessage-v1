@@ -17,7 +17,7 @@ window.onload = () => {
     document.querySelector('html').classList.add('development');
   }
 
-  // Handled server-side
+  // Handled server-side, as it should have been in the fist place
   //
   // if (!hasCookie('name') || !hasCookie('flags')) {
   //   window.location.replace('/');
@@ -66,7 +66,7 @@ window.onload = () => {
 
   const updateMessages = (a, b) => {
     try {
-      // Server shouldn't ever send this header
+      // Server shouldn't ever send this header, but it used to because i'm stupid :^)
       //
       // if (a.headers.get('X-Should-Update-Name')) {
       //   updateUsername();
@@ -86,7 +86,9 @@ window.onload = () => {
         messages[messages.length-1].special = 'newest';
         messages[0].special = 'oldest';
         messages.forEach(v => {
-          messagesStr += `<div ${v.special ? 'id="' + v.special + '" ' : ''}class="message${v.system?' system-message':''}${v.admin?' admin-message':''}"><span class="message-author" title="${v.timestamp}">${v.author}</span><span class="message-content">${v.content}</span></div>`;
+          const date = new Date(v.timestamp);
+          const formattedTime = `${date.getHours()}:${('0'.concat(date.getMinutes())).substr(-2)}:${('0'.concat(date.getSeconds())).substr(-2)}`;
+          messagesStr += `<div ${v.special ? 'id="' + v.special + '" ' : ''}class="message${v.system?' system-message':''}${v.admin?' admin-message':''}"><span class="message-author" title="${formattedTime}">${v.author}</span><span class="message-content">${v.content}</span></div>`;
         });
         document.querySelector('.message-container').innerHTML = messagesStr;
         if (b) {
