@@ -1,12 +1,13 @@
 //////////// Sector 0x0 ////////////
 
 const fetch = require('node-fetch');
+const http = require('http');
 const express = require('express');
 const bodyParser = require('body-parser');
+const WebSocket = require('ws');
 const { clientID, messageLimit, port } = require('./config.json');
 const clientSecret = process.env['OAUTH_CLIENT_SECRET'];
-const pwd = process.env['ADMIN_AUTH_CODE'];
-const admins = process.env['ADMIN_ID_LIST'];
+const admins = JSON.parse(process.env['ADMIN_ID_LIST']);
 
 
 //////////// Sector 0x1 ////////////
@@ -14,28 +15,47 @@ const admins = process.env['ADMIN_ID_LIST'];
 const app = express();
 app.use(bodyParser.json());
 
-const validateCookies = (request, response, next) => {
-  const { headers, query } = request;
+const hasFlag = (flags, flag) => {
+  switch((flags >> flag) % 2) {
+    case 1:
+      return true;
+      break;
+    case 2:
+    default:
+      return false;
+      break;
+  }
+};
+
+const hasCookie = (request, name) => {
+  const { headers } = request;
   const { cookie } = headers;
-  const hasCookie = (name) => {
-    let exists = cookie.split(';').some((item) => item.trim().startsWith(`${name}=`));
-    let isSet = false;
-    if (exists) isSet = cookie.split(';').find(row => row.trim().startsWith(`${name}=`)).split('=')[1] !== '';
-    return (exists && isSet);
-  }
-  const getCookie = (name) => {
-    if (!hasCookie(name)) return false;
-    return cookie.split(';').find(row => row.trim().startsWith(`${name}=`)).split('=')[1];
-  }
-  if (!hasCookie('name') || !hasCookie('flags')) {
+  let exists = false;
+  if (cookie) exists = cookie.split(';').some((item) => item.trim().startsWith(`${name}=`));
+  let isSet = false;
+  if (exists) isSet = cookie.split(';').find(row => row.trim().startsWith(`${name}=`)).split('=')[1] !== '';
+  return (exists && isSet);
+};
+
+const getCookie = (request, name) => {
+  const { headers } = request;
+  const { cookie } = headers;
+  if (!hasCookie(request, name)) return false;
+  return cookie.split(';').find(row => row.trim().startsWith(`${name}=`)).split('=')[1];
+};
+
+const validateCookies = (request, response, next) => {
+  const { headers } = request;
+  const { cookie } = headers;
+  if (!hasCookie(request, 'name') || !hasCookie(request, 'flags')) {
     response.redirect('/');
   } else {
-    response.cookie('name', getCookie('name'));
-    response.cookie('id', getCookie('id') || '');
-    response.cookie('flags', (getCookie('id') == 255515821541949440 ? '1' : '0'));
+    response.cookie('name', getCookie(request, 'name'));
+    response.cookie('id', getCookie(request, 'id') || '');
+    response.cookie('flags', (admins.includes(parseInt(getCookie(request, 'id'))) ? '1' : '0'));
     next();
   }
-}
+};
 
 const initialMessages = [
   {author: 'SYSTEM', content: 'Loaded!', timestamp: Date.now(), system: true}
@@ -103,12 +123,9 @@ app.get('/', async (request, response) => {
           authorization: `${oauthData.token_type} ${oauthData.access_token}`,
         }
       })).json();
-      const isAdmin = () => {
-        return (userResult.id==255515821541949440);
-      }
       response.cookie('name', userResult.username);
       response.cookie('id', userResult.id);
-      response.cookie('flags', (isAdmin()?'1':'0'));
+      response.cookie('flags', (admins.includes(parseInt(userResult.id))?'1':'0'));
       return response.redirect('/chat');
     } catch (error) {
       // NOTE: An unauthorized token will not throw an error;
@@ -116,7 +133,7 @@ app.get('/', async (request, response) => {
       console.error(error);
     }
   }
-  if (cookie && cookie.split(';').some((item) => item.trim().startsWith('name='))){
+  if (hasCookie(request, 'name') && hasCookie(request, 'id') && hasCookie(request, 'flags')) {
     return response.redirect('/chat');
   }
   return response.sendFile(pages['landing'], { root: '.' });
@@ -169,7 +186,9 @@ app.get('/messages', async ({}, response) => {
   return response.send(getMessages());
 });
 
-app.post('/messages', async ({ headers, body }, response) => {
+app.post('/messages', async (request, response) => {
+  const { headers, body } = request;
+  const isAdmin = () => hasFlag(getCookie(request, 'flags'), 0);
   try {
     if (headers['content-type'] != 'application/json') {
       console.log('Sent response \'415\'.', headers, body);
@@ -185,7 +204,7 @@ app.post('/messages', async ({ headers, body }, response) => {
     if ((
         reqJSON.content[0] == '/' &&
         (
-          reqJSON.content != `/clear -${pwd}` &&
+          !(reqJSON.content == `/clear` && isAdmin()) &&
           !reqJSON.content.startsWith('/setname')
         )
       ) || (
@@ -196,7 +215,7 @@ app.post('/messages', async ({ headers, body }, response) => {
       return response.sendStatus(403);
     }
 
-    if (reqJSON.content == `/clear -${pwd}`) {
+    if (reqJSON.content == `/clear` && isAdmin()) {
       messages = [{author: 'SYSTEM', content: `${reqJSON.author} cleared all messages.`, timestamp: Date.now(), system: true}];
       state = 0;
     } else if (reqJSON.content.startsWith('/setname ')) {
