@@ -4,8 +4,7 @@ this code is terrible and i'm quite ashamed to have written it :/
 
 a quick explaination on how to run this
 ---
-all you need are the correct environment variables set at run-time:
-- `ADMIN_AUTH_CODE`
-- `OAUTH_CLIENT_SECRET`
+the environment variable `OAUTH_CLIENT_SECRET` needs to be set to the client secret of your discord application
 
-the first of which being the password you want to use for admin commands, and the second being the oauth client secret from your discord application if you chose to use discord for auth.
+you will also need to generate an OAuth2 URL (at https://discord.com/developers/applications/YOUR-APPLICATION-ID/oauth2) 
+for login and replace it in `landing.html`, `landing.js`, and `server.js`.
