@@ -1,3 +1,5 @@
+[](https://traffic-tracker.isotach.repl.co/toastythetoaster/directishmessage-v1)
+
 # Direct-ish Message #
 this code is terrible and i'm quite ashamed to have written it :/
 
