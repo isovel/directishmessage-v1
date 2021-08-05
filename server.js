@@ -9,11 +9,13 @@ const { clientID, messageLimit, port } = require('./config.json');
 const clientSecret = process.env['OAUTH_CLIENT_SECRET'];
 const admins = JSON.parse(process.env['ADMIN_ID_LIST']);
 
+const app = express();
+const server = http.createServer(app);
+app.use(bodyParser.json());
+
 
 //////////// Sector 0x1 ////////////
 
-const app = express();
-const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws) => {
@@ -53,8 +55,6 @@ const ws = {
   }
 };
 
-app.use(bodyParser.json());
-
 const hasFlag = (flags, flag) => {
   switch ((flags >> flag) % 2) {
     case 1:
@@ -93,6 +93,7 @@ const validateCookies = (request, response, next) => {
     response.cookie('name', getCookie(request, 'name'));
     response.cookie('id', getCookie(request, 'id') || '');
     response.cookie('flags', (admins.includes(parseInt(getCookie(request, 'id'))) ? '1' : '0'));
+    (admins.includes(parseInt(getCookie(request,'id')))?'1':'0')==='0'&&getCookie(request,'flags')==='1'&&response.setHeader('X-Should-Update','true');
     next();
   }
 };
@@ -101,26 +102,21 @@ const initialMessages = [
   { author: 'SYSTEM', content: 'Loaded!', timestamp: Date.now(), system: true }
 ];
 let messages = initialMessages;
-let state = 0;
 
 const getMessages = () => {
   slimArr = messages.slice(-messageLimit);
-  stateStr = state;
   return {
-    messages: slimArr,
-    state: stateStr
+    messages: slimArr
   }
 };
 
 const clearMessages = (user) => {
-  messages = [{ author: 'SYSTEM', content: `${user} cleared all messages.`, timestamp: Date.now(), system: true }];
-  state = 0;
+  messages = [{ author: 'SYSTEM', content: `${decodeURIComponent(user)} cleared all messages.`, timestamp: Date.now(), system: true }];
   ws.send(JSON.stringify({type: 4, data: {message: 'Messages cleared.'}}));
 };
 
 const postMessage = (message) => {
   messages.push(message);
-  state++;
   ws.send(JSON.stringify({type: 4, data: {message: 'New message.'}}));
 };
 
@@ -218,6 +214,7 @@ app.get('/styles/login', async ({ }, response) => {
 //////////// Sector 0x5 ////////////
 
 app.use('/chat', validateCookies);
+app.use('/messages', validateCookies);
 
 app.get('/chat', async ({ }, response) => {
   return response.sendFile(pages['chat'], { root: '.' });
@@ -259,10 +256,7 @@ app.post('/messages', async (request, response) => {
         !(reqJSON.content == `/clear` && isAdmin()) &&
         !reqJSON.content.startsWith('/setname')
       )
-    ) || (
-        reqJSON.content.includes('<') &&
-        reqJSON.content.includes('>')
-      )) {
+    ) ) {
       console.log('Sent response \'403\'.', reqJSON);
       return response.sendStatus(403);
     }
@@ -270,8 +264,7 @@ app.post('/messages', async (request, response) => {
     if (reqJSON.content == `/clear` && isAdmin()) {
       clearMessages(reqJSON.author);
     } else if (reqJSON.content.startsWith('/setname ')) {
-      // tbf this is handled client side, but having a handler here isn't a terrible idea
-      // just in case i want to do this server-side at some point
+      // tbf this is handled client side, but having a handler here isn't a terrible idea, just in case i want to do this server-side at some point
       let newName = '';
       reqJSON.content.split(' ').slice(1).forEach(v => {
         newName += v;

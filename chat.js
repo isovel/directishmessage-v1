@@ -1,39 +1,45 @@
+if( typeof Element.prototype.clearChildren === 'undefined' ) {
+    Object.defineProperty(Element.prototype, 'clearChildren', {
+      configurable: true,
+      enumerable: false,
+      value: function() {
+        while(this.firstChild) this.removeChild(this.lastChild);
+      }
+    });
+}
+
+const Utils = {
+  getWeekday: weekday => {
+    return {
+      1: 'Monday',
+      2: 'Tuesday',
+      3: 'Wednesday',
+      4: 'Thursday',
+      5: 'Friday',
+      6: 'Saturday',
+      7: 'Sunday'
+    }[weekday];
+  },
+  getMonth: month => {
+    return {
+      1: 'January',
+      2: 'February',
+      3: 'March',
+      4: 'April',
+      5: 'May',
+      6: 'June',
+      7: 'July',
+      8: 'August',
+      9: 'September',
+      10: 'October',
+      11: 'November',
+      12: 'December'
+    }[month];
+  }
+};
+
 window.onload = () => {
   console.debug('Loaded!');
-
-  webSocket = new WebSocket(`wss://${document.location.host}`);
-
-  webSocket.onopen = (event) => {
-    webSocket.send(JSON.stringify({type: 1, data: {message: 'ping'}}));
-  };
-
-  webSocket.onmessage = (event) => {
-    const dataObj = JSON.parse(event.data);
-    console.log('[WSS] Recieved message: ', dataObj);
-    if (dataObj && dataObj.type) {
-      if (dataObj.type % 2 === 1) {
-        webSocket.send(JSON.stringify({type: 3, data: {message: 'This message type is reserved for client use only.'}}));
-      } else {
-        switch (dataObj.type) {
-          case 2:
-            console.log('[WSS] Error: ' + dataObj.data.message);
-            break;
-          case 4:
-            fetch(`https://${document.location.host}/messages`).then(a => { updateMessages(a, false); });
-            break;
-          default:
-            webSocket.send(JSON.stringify({type: 3, data: {message: `Unknown message type '${dataObj.type}'`}}));
-            break;
-        }
-      }
-    } else {
-      webSocket.send(JSON.stringify({type: 3, data: {message: 'Unsupported data structure used. Structure {type: number, data: object} expected.'}}));
-    }
-  };
-
-  webSocket.onclose = (event) => {
-    window.location.reload();
-  };
 
   const hasCookie = (name) => {
     let exists = document.cookie.split(';').some((item) => item.trim().startsWith(`${name}=`));
@@ -107,16 +113,45 @@ window.onload = () => {
       if (a.headers.get('X-Should-Update')) {
         updateAll();
       }
-      let messagesStr = '';
       a.json().then(c => {
+        let containerElement = document.querySelector('.message-container');
+        containerElement.clearChildren();
         messages = c.messages;
         messages[messages.length - 1].special = 'newest';
         messages[0].special = 'oldest';
         messages.forEach(v => {
-          const date = new Date(v.timestamp);
-          messagesStr += `<div ${v.special ? 'id="' + v.special + '" ' : ''}class="message${v.system ? ' system-message' : ''}${v.admin ? ' admin-message' : ''}"><span class="message-author" title="${date.getHours()}:${('0'.concat(date.getMinutes())).substr(-2)}:${('0'.concat(date.getSeconds())).substr(-2)}">${v.author}</span><span class="message-content">${v.content}</span></div>`;
+          let date = new Date(v.timestamp);
+          let weekday = Utils.getWeekday(date.getDay());
+          let month = Utils.getMonth(date.getMonth());
+          let day = date.getDate();
+          let year = date.getFullYear();
+          let hours = date.getHours();
+          let minutes = ('0'.concat(date.getMinutes())).substr(-2);
+          let seconds = ('0'.concat(date.getSeconds())).substr(-2);
+          let meridian = 'AM';
+          hours >= 12 && (meridian = 'PM');
+          hours > 12 && (hours -= 12);
+          let timestamp = `${weekday}, ${month} ${day}, ${year} ${hours}:${minutes}:${seconds} ${meridian}`;
+
+          let messageElement = document.createElement('div');
+          messageElement.className = 'message';
+          v.special && (messageElement.id = v.special);
+          v.system && messageElement.classList.add('system-message');
+          v.admin && messageElement.classList.add('admin-message');
+
+          let messageAuthorElement = document.createElement('span');
+          messageAuthorElement.className = 'message-author';
+          messageAuthorElement.title = timestamp;
+          messageAuthorElement.innerText = decodeURIComponent(v.author);
+
+          let messageContentElement = document.createElement('span');
+          messageContentElement.className = 'message-content';
+          messageContentElement.innerText = v.content;
+
+          messageElement.appendChild(messageAuthorElement);
+          messageElement.appendChild(messageContentElement);
+          containerElement.appendChild(messageElement);
         });
-        document.querySelector('.message-container').innerHTML = messagesStr;
         if (b) {
           document.querySelector('.textbox').value = '';
         }
@@ -129,7 +164,7 @@ window.onload = () => {
     }
   };
 
-  const sendMessage = messageObject => {
+  sendMessage = messageObject => {
     messageObject.timestamp = Date.now();
     if (hasFlag(0) && !messageObject.system) messageObject.admin = true;
     try {
@@ -145,9 +180,43 @@ window.onload = () => {
     }
   };
 
+  const webSocket = new WebSocket(`wss://${document.location.host}`);
+
+  webSocket.onopen = (event) => {
+    webSocket.send(JSON.stringify({type: 1, data: {username: username}}));
+  };
+
+  webSocket.onmessage = (event) => {
+    const dataObj = JSON.parse(event.data);
+    console.log('[WSS] Recieved message: ', dataObj);
+    if (dataObj && dataObj.type) {
+      if (dataObj.type % 2 === 1) {
+        webSocket.send(JSON.stringify({type: 3, data: {message: 'This message type is reserved for client use only.'}}));
+      } else {
+        switch (dataObj.type) {
+          case 2:
+            console.log('[WSS] Error: ' + dataObj.data.message);
+            break;
+          case 4:
+            fetch(`https://${document.location.host}/messages`).then(a => { updateMessages(a, false); });
+            break;
+          default:
+            webSocket.send(JSON.stringify({type: 3, data: {message: `Unknown message type '${dataObj.type}'`}}));
+            break;
+        }
+      }
+    } else {
+      webSocket.send(JSON.stringify({type: 3, data: {message: 'Unsupported data structure used. Structure {type: number, data: object} expected.'}}));
+    }
+  };
+
+  webSocket.onclose = (event) => {
+    window.location.reload();
+  };
+
   let msg = {
     author: 'SYSTEM',
-    content: `${username} joined the chatroom.`,
+    content: `${decodeURIComponent(username)} joined the chatroom.`,
     timestamp: Date.now(),
     system: true
   };
