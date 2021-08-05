@@ -5,7 +5,8 @@ const http = require('http');
 const express = require('express');
 const bodyParser = require('body-parser');
 const WebSocket = require('ws');
-const { clientID, messageLimit, port } = require('./config.json');
+const { clientID, messageLimit } = require('./config.json');
+const port = process.env['PORT'] || 3000;
 const clientSecret = process.env['OAUTH_CLIENT_SECRET'];
 const admins = JSON.parse(process.env['ADMIN_ID_LIST']);
 
@@ -24,25 +25,25 @@ wss.on('connection', (ws) => {
     console.log('[WSS] Recieved message: ', dataObj);
     if (dataObj && dataObj.type) {
       if (dataObj.type % 2 === 0) {
-        ws.send(JSON.stringify({type: 2, data: {message: 'This message type is reserved for server use only.'}}));
+        ws.send(JSON.stringify({ type: 2, data: { message: 'This message type is reserved for server use only.' } }));
       } else {
         switch (dataObj.type) {
           case 1:
-            ws.send(JSON.stringify({type: 0, data: {message: 'pong'}}));
+            ws.send(JSON.stringify({ type: 0, data: { message: 'pong' } }));
             break;
           case 3:
             console.log('[WSS] Error: ' + dataObj.data.message);
             break;
           default:
-            ws.send(JSON.stringify({type: 2, data: {message: `Unknown message type '${dataObj.type}'`}}));
+            ws.send(JSON.stringify({ type: 2, data: { message: `Unknown message type '${dataObj.type}'` } }));
             break;
         }
       }
     } else {
-      ws.send(JSON.stringify({type: 2, data: {message: 'Unsupported data structure used. Structure {type: number, data: object} expected.'}}));
+      ws.send(JSON.stringify({ type: 2, data: { message: 'Unsupported data structure used. Structure {type: number, data: object} expected.' } }));
     }
   });
-  ws.send(JSON.stringify({type: 0, data: {message: 'Connection to WebSocket acknowledged.'}}));
+  ws.send(JSON.stringify({ type: 0, data: { message: 'Connection to WebSocket acknowledged.' } }));
 });
 
 const ws = {
@@ -93,7 +94,7 @@ const validateCookies = (request, response, next) => {
     response.cookie('name', getCookie(request, 'name'));
     response.cookie('id', getCookie(request, 'id') || '');
     response.cookie('flags', (admins.includes(parseInt(getCookie(request, 'id'))) ? '1' : '0'));
-    (admins.includes(parseInt(getCookie(request,'id')))?'1':'0')==='0'&&getCookie(request,'flags')==='1'&&response.setHeader('X-Should-Update','true');
+    (admins.includes(parseInt(getCookie(request, 'id'))) ? '1' : '0') === '0' && getCookie(request, 'flags') === '1' && response.setHeader('X-Should-Update', 'true');
     next();
   }
 };
@@ -112,12 +113,12 @@ const getMessages = () => {
 
 const clearMessages = (user) => {
   messages = [{ author: 'SYSTEM', content: `${decodeURIComponent(user)} cleared all messages.`, timestamp: Date.now(), system: true }];
-  ws.send(JSON.stringify({type: 4, data: {message: 'Messages cleared.'}}));
+  ws.send(JSON.stringify({ type: 4, data: { message: 'Messages cleared.' } }));
 };
 
 const postMessage = (message) => {
   messages.push(message);
-  ws.send(JSON.stringify({type: 4, data: {message: 'New message.'}}));
+  ws.send(JSON.stringify({ type: 4, data: { message: 'New message.' } }));
 };
 
 
@@ -256,7 +257,7 @@ app.post('/messages', async (request, response) => {
         !(reqJSON.content == `/clear` && isAdmin()) &&
         !reqJSON.content.startsWith('/setname')
       )
-    ) ) {
+    )) {
       console.log('Sent response \'403\'.', reqJSON);
       return response.sendStatus(403);
     }

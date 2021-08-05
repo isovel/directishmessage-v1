@@ -1,11 +1,11 @@
-if( typeof Element.prototype.clearChildren === 'undefined' ) {
-    Object.defineProperty(Element.prototype, 'clearChildren', {
-      configurable: true,
-      enumerable: false,
-      value: function() {
-        while(this.firstChild) this.removeChild(this.lastChild);
-      }
-    });
+if (typeof Element.prototype.clearChildren === 'undefined') {
+  Object.defineProperty(Element.prototype, 'clearChildren', {
+    configurable: true,
+    enumerable: false,
+    value: function() {
+      while (this.firstChild) this.removeChild(this.lastChild);
+    }
+  });
 }
 
 const Utils = {
@@ -183,7 +183,7 @@ window.onload = () => {
   const webSocket = new WebSocket(`wss://${document.location.host}`);
 
   webSocket.onopen = (event) => {
-    webSocket.send(JSON.stringify({type: 1, data: {username: username}}));
+    webSocket.send(JSON.stringify({ type: 1, data: { username: username } }));
   };
 
   webSocket.onmessage = (event) => {
@@ -191,7 +191,7 @@ window.onload = () => {
     console.log('[WSS] Recieved message: ', dataObj);
     if (dataObj && dataObj.type) {
       if (dataObj.type % 2 === 1) {
-        webSocket.send(JSON.stringify({type: 3, data: {message: 'This message type is reserved for client use only.'}}));
+        webSocket.send(JSON.stringify({ type: 3, data: { message: 'This message type is reserved for client use only.' } }));
       } else {
         switch (dataObj.type) {
           case 2:
@@ -201,12 +201,12 @@ window.onload = () => {
             fetch(`https://${document.location.host}/messages`).then(a => { updateMessages(a, false); });
             break;
           default:
-            webSocket.send(JSON.stringify({type: 3, data: {message: `Unknown message type '${dataObj.type}'`}}));
+            webSocket.send(JSON.stringify({ type: 3, data: { message: `Unknown message type '${dataObj.type}'` } }));
             break;
         }
       }
     } else {
-      webSocket.send(JSON.stringify({type: 3, data: {message: 'Unsupported data structure used. Structure {type: number, data: object} expected.'}}));
+      webSocket.send(JSON.stringify({ type: 3, data: { message: 'Unsupported data structure used. Structure {type: number, data: object} expected.' } }));
     }
   };
 
